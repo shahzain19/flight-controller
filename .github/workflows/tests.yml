@@ -1,0 +1,69 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  tests:
+    name: Tests (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [simulation, development]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential gcc-13 g++-13 lcov
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_C_COMPILER=gcc-13
+          -DCMAKE_CXX_COMPILER=g++-13
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_WARN_ERROR=ON
+          -DFC_PROFILE=${{ matrix.profile }}
+          -DFC_ENABLE_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Generate coverage
+        if: matrix.profile == 'simulation'
+        run: |
+          lcov --capture --directory build --output-file lcov.info
+          lcov --remove lcov.info '/usr/*' '*/third_party/*' '*/tests/*' --output-file lcov_filtered.info
+          lcov --list lcov_filtered.info
+
+      - name: Check coverage thresholds
+        if: matrix.profile == 'simulation'
+        run: |
+          TOTAL_LINE=$(lcov --summary lcov_filtered.info 2>&1 | grep "lines" | grep -oP '[\d.]+(?=%)')
+          TOTAL_FUNC=$(lcov --summary lcov_filtered.info 2>&1 | grep "functions" | grep -oP '[\d.]+(?=%)')
+          echo "Line coverage: ${TOTAL_LINE}%"
+          echo "Function coverage: ${TOTAL_FUNC}%"
+          if [ $(echo "$TOTAL_LINE < 100" | bc -l) -eq 1 ]; then
+            echo "WARNING: Line coverage below 100% threshold"
+          fi
+          if [ $(echo "$TOTAL_FUNC < 100" | bc -l) -eq 1 ]; then
+            echo "WARNING: Function coverage below 100% threshold"
+          fi
+
+      - name: Upload coverage
+        if: matrix.profile == 'simulation'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: lcov_filtered.info
