@@ -1,0 +1,62 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Compiled objects
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# Executables
+*.exe
+*.out
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+
+# Coverage
+*.gcda
+*.gcno
+*.gcov
+coverage/
+htmlcov/
+lcov.info
+
+# Profiling
+*.profraw
+*.profdata
+
+# Artifacts
+artifacts/coverage/*
+artifacts/reports/*
+artifacts/benchmarks/*
+!artifacts/coverage/.gitkeep
+!artifacts/reports/.gitkeep
+!artifacts/benchmarks/.gitkeep
+
+# Build artifacts
+build/*
+!build/.gitkeep
+
+# Package files
+*.tar.gz
+*.zip
