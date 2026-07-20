@@ -40,7 +40,7 @@ void test_is_error() {
 // ============================================================================
 
 void test_error_code_to_string_success() {
-    const char* str = fc::error_code_to_string(fc::ErrorCode::kOk);
+    [[maybe_unused]] const char* str = fc::error_code_to_string(fc::ErrorCode::kOk);
     assert(str != nullptr);
     assert(std::strcmp(str, "Ok") == 0);
 

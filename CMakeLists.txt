@@ -55,7 +55,6 @@ add_compile_options(
     -Wimplicit-fallthrough
     -Wswitch-enum
     -Wswitch-default
-    -Wpedantic
 )
 
 # ============================================================================
@@ -125,40 +124,40 @@ target_compile_features(fc_core INTERFACE cxx_std_23)
 # Tests
 # ============================================================================
 
-enable_testing()
+option(FC_BUILD_TESTS "Build test suite" ON)
 
-# Test executable template
-function(fc_add_test test_name test_source)
-    add_executable(${test_name} ${test_source})
-    target_link_libraries(${test_name} PRIVATE fc_core)
-    target_compile_definitions(${test_name} PRIVATE
-        $<$<CONFIG:Debug>:FC_DEBUG=1>
-        $<$<CONFIG:Release>:FC_NDEBUG=1>
-    )
-    add_test(NAME ${test_name} COMMAND ${test_name})
-endfunction()
+if(FC_BUILD_TESTS)
+    enable_testing()
 
-# Unit tests
-fc_add_test(test_types tests/unit/core/test_types.cpp)
-fc_add_test(test_error_code tests/unit/core/test_error_code.cpp)
-fc_add_test(test_status tests/unit/core/test_status.cpp)
-fc_add_test(test_result tests/unit/core/test_result.cpp)
-fc_add_test(test_constants tests/unit/core/test_constants.cpp)
-fc_add_test(test_assert tests/unit/core/test_assert.cpp)
+    # Test executable template
+    function(fc_add_test test_name test_source)
+        add_executable(${test_name} ${test_source})
+        target_link_libraries(${test_name} PRIVATE fc_core)
+        target_compile_definitions(${test_name} PRIVATE
+            $<$<CONFIG:Debug>:FC_DEBUG=1>
+            $<$<CONFIG:Release>:FC_NDEBUG=1>
+        )
+        add_test(NAME ${test_name} COMMAND ${test_name})
+    endfunction()
 
-# ============================================================================
-# Static Analysis (compile-time checks)
-# ============================================================================
+    # Unit tests
+    fc_add_test(test_types tests/unit/core/test_types.cpp)
+    fc_add_test(test_error_code tests/unit/core/test_error_code.cpp)
+    fc_add_test(test_status tests/unit/core/test_status.cpp)
+    fc_add_test(test_result tests/unit/core/test_result.cpp)
+    fc_add_test(test_constants tests/unit/core/test_constants.cpp)
+    fc_add_test(test_assert tests/unit/core/test_assert.cpp)
 
-# Ensure all headers compile independently
-fc_add_test(test_header_includes tests/unit/core/test_header_includes.cpp)
+    # Ensure all headers compile independently
+    fc_add_test(test_header_includes tests/unit/core/test_header_includes.cpp)
 
-# Math tests
-fc_add_test(test_vector2 tests/unit/math/test_vector2.cpp)
-fc_add_test(test_vector3 tests/unit/math/test_vector3.cpp)
-fc_add_test(test_matrix3 tests/unit/math/test_matrix3.cpp)
-fc_add_test(test_matrix4 tests/unit/math/test_matrix4.cpp)
-fc_add_test(test_quaternion tests/unit/math/test_quaternion.cpp)
+    # Math tests
+    fc_add_test(test_vector2 tests/unit/math/test_vector2.cpp)
+    fc_add_test(test_vector3 tests/unit/math/test_vector3.cpp)
+    fc_add_test(test_matrix3 tests/unit/math/test_matrix3.cpp)
+    fc_add_test(test_matrix4 tests/unit/math/test_matrix4.cpp)
+    fc_add_test(test_quaternion tests/unit/math/test_quaternion.cpp)
 
-# Benchmarks
-fc_add_test(test_benchmarks tests/unit/math/test_benchmarks.cpp)
+    # Benchmarks
+    fc_add_test(test_benchmarks tests/unit/math/test_benchmarks.cpp)
+endif()

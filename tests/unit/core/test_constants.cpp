@@ -48,7 +48,7 @@ void test_degrees_radians_conversion() {
     fc::f64 radians = degrees * fc::constants::math::kDegreesToRadians;
     assert(std::abs(radians - fc::constants::math::kPi) < 1e-10);
 
-    fc::f64 back = radians * fc::constants::math::kRadiansToDegrees;
+    [[maybe_unused]] fc::f64 back = radians * fc::constants::math::kRadiansToDegrees;
     assert(std::abs(back - 180.0) < 1e-10);
 
     std::printf("PASS: degrees/radians conversion\n");
@@ -80,12 +80,12 @@ void test_earth_radius() {
 void test_unit_conversions() {
     // Feet to meters
     fc::f64 feet = 1000.0;
-    fc::f64 meters = feet * fc::constants::physics::kFeetToMeters;
+    [[maybe_unused]] fc::f64 meters = feet * fc::constants::physics::kFeetToMeters;
     assert(std::abs(meters - 304.8) < 0.01);
 
     // Knots to m/s
     fc::f64 knots = 100.0;
-    fc::f64 ms = knots * fc::constants::physics::kKnotsToMS;
+    [[maybe_unused]] fc::f64 ms = knots * fc::constants::physics::kKnotsToMS;
     assert(ms > 50.0 && ms < 52.0);
 
     std::printf("PASS: unit conversions\n");
@@ -131,9 +131,9 @@ void test_watchdog_timeout() {
 
 void test_constexpr_usage() {
     // Verify constants can be used in constexpr contexts
-    constexpr fc::f64 pi = fc::constants::math::kPi;
-    constexpr fc::f64 gravity = fc::constants::physics::kStandardGravity;
-    constexpr fc::u32 hz = fc::constants::system::kControlLoopHz;
+    [[maybe_unused]] constexpr fc::f64 pi = fc::constants::math::kPi;
+    [[maybe_unused]] constexpr fc::f64 gravity = fc::constants::physics::kStandardGravity;
+    [[maybe_unused]] constexpr fc::u32 hz = fc::constants::system::kControlLoopHz;
 
     assert(pi > 3.0);
     assert(gravity > 9.0);

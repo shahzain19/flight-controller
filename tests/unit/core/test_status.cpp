@@ -48,7 +48,7 @@ void test_error_code_message_constructor() {
 // ============================================================================
 
 void test_ok_factory() {
-    fc::Status s = fc::Status::ok();
+    [[maybe_unused]] fc::Status s = fc::Status::ok();
     assert(s.is_ok());
     assert(s.code() == fc::ErrorCode::kOk);
 
@@ -56,7 +56,7 @@ void test_ok_factory() {
 }
 
 void test_error_factory() {
-    fc::Status s = fc::Status::error(fc::ErrorCode::kDivisionByZero, "divide by zero");
+    [[maybe_unused]] fc::Status s = fc::Status::error(fc::ErrorCode::kDivisionByZero, "divide by zero");
     assert(!s.is_ok());
     assert(s.code() == fc::ErrorCode::kDivisionByZero);
     assert(std::strcmp(s.message(), "divide by zero") == 0);
@@ -131,7 +131,7 @@ void test_bool_conversion() {
 
 void test_copy_constructor() {
     fc::Status original(fc::ErrorCode::kTimeout, "original");
-    fc::Status copy = original;
+    [[maybe_unused]] fc::Status copy = original;
 
     assert(copy == original);
     assert(copy.code() == original.code());

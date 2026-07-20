@@ -54,7 +54,7 @@ void test_element_access() {
 void test_addition() {
     fc::Vector3 a(1.0f, 2.0f, 3.0f);
     fc::Vector3 b(4.0f, 5.0f, 6.0f);
-    fc::Vector3 c = a + b;
+    [[maybe_unused]] fc::Vector3 c = a + b;
     assert(c.x() == 5.0f);
     assert(c.y() == 7.0f);
     assert(c.z() == 9.0f);
@@ -64,7 +64,7 @@ void test_addition() {
 void test_subtraction() {
     fc::Vector3 a(5.0f, 6.0f, 7.0f);
     fc::Vector3 b(2.0f, 3.0f, 4.0f);
-    fc::Vector3 c = a - b;
+    [[maybe_unused]] fc::Vector3 c = a - b;
     assert(c.x() == 3.0f);
     assert(c.y() == 3.0f);
     assert(c.z() == 3.0f);
@@ -73,12 +73,12 @@ void test_subtraction() {
 
 void test_scalar_multiply() {
     fc::Vector3 v(2.0f, 3.0f, 4.0f);
-    fc::Vector3 r = v * 3.0f;
+    [[maybe_unused]] fc::Vector3 r = v * 3.0f;
     assert(r.x() == 6.0f);
     assert(r.y() == 9.0f);
     assert(r.z() == 12.0f);
 
-    fc::Vector3 r2 = 3.0f * v;
+    [[maybe_unused]] fc::Vector3 r2 = 3.0f * v;
     assert(r2.x() == 6.0f);
     assert(r2.y() == 9.0f);
     assert(r2.z() == 12.0f);
@@ -87,7 +87,7 @@ void test_scalar_multiply() {
 
 void test_scalar_divide() {
     fc::Vector3 v(6.0f, 9.0f, 12.0f);
-    fc::Vector3 r = v / 3.0f;
+    [[maybe_unused]] fc::Vector3 r = v / 3.0f;
     assert(r.x() == 2.0f);
     assert(r.y() == 3.0f);
     assert(r.z() == 4.0f);
@@ -97,7 +97,7 @@ void test_scalar_divide() {
 void test_component_multiply() {
     fc::Vector3 a(2.0f, 3.0f, 4.0f);
     fc::Vector3 b(5.0f, 6.0f, 7.0f);
-    fc::Vector3 r = a * b;
+    [[maybe_unused]] fc::Vector3 r = a * b;
     assert(r.x() == 10.0f);
     assert(r.y() == 18.0f);
     assert(r.z() == 28.0f);
@@ -106,7 +106,7 @@ void test_component_multiply() {
 
 void test_unary_negate() {
     fc::Vector3 v(1.0f, -2.0f, 3.0f);
-    fc::Vector3 r = -v;
+    [[maybe_unused]] fc::Vector3 r = -v;
     assert(r.x() == -1.0f);
     assert(r.y() == 2.0f);
     assert(r.z() == -3.0f);
@@ -133,10 +133,10 @@ void test_compound_assignment() {
 void test_dot_product() {
     fc::Vector3 a(1.0f, 2.0f, 3.0f);
     fc::Vector3 b(4.0f, 5.0f, 6.0f);
-    float d = a.dot(b);
+    [[maybe_unused]] float d = a.dot(b);
     assert(d == 32.0f);
 
-    float d2 = fc::dot(a, b);
+    [[maybe_unused]] float d2 = fc::dot(a, b);
     assert(d2 == 32.0f);
     std::printf("PASS: Vector3 dot product\n");
 }
@@ -144,13 +144,13 @@ void test_dot_product() {
 void test_cross_product() {
     fc::Vector3 x(1.0f, 0.0f, 0.0f);
     fc::Vector3 y(0.0f, 1.0f, 0.0f);
-    fc::Vector3 z = x.cross(y);
+    [[maybe_unused]] fc::Vector3 z = x.cross(y);
     assert(z.x() == 0.0f && z.y() == 0.0f && z.z() == 1.0f);
 
-    fc::Vector3 z2 = y.cross(x);
+    [[maybe_unused]] fc::Vector3 z2 = y.cross(x);
     assert(z2.x() == 0.0f && z2.y() == 0.0f && z2.z() == -1.0f);
 
-    fc::Vector3 z3 = fc::cross(x, y);
+    [[maybe_unused]] fc::Vector3 z3 = fc::cross(x, y);
     assert(z3.z() == 1.0f);
     std::printf("PASS: Vector3 cross product\n");
 }
@@ -164,7 +164,7 @@ void test_length() {
 
 void test_normalize() {
     fc::Vector3 v(0.0f, 3.0f, 4.0f);
-    fc::Vector3 n = v.normalized();
+    [[maybe_unused]] fc::Vector3 n = v.normalized();
     assert(approx_eq(n.length(), 1.0f));
     assert(approx_eq(n.x(), 0.0f));
     assert(approx_eq(n.y(), 0.6f));
@@ -175,7 +175,7 @@ void test_normalize() {
 void test_lerp() {
     fc::Vector3 a(0.0f, 0.0f, 0.0f);
     fc::Vector3 b(10.0f, 20.0f, 30.0f);
-    fc::Vector3 mid = a.lerp(b, 0.5f);
+    [[maybe_unused]] fc::Vector3 mid = a.lerp(b, 0.5f);
     assert(approx_eq(mid.x(), 5.0f));
     assert(approx_eq(mid.y(), 10.0f));
     assert(approx_eq(mid.z(), 15.0f));
@@ -197,16 +197,16 @@ void test_free_functions() {
     assert(fc::distance(a, b) == 3.0f);
     assert(fc::distance_squared(a, b) == 9.0f);
 
-    fc::Vector3 z = fc::vector3_zero();
+    [[maybe_unused]] fc::Vector3 z = fc::vector3_zero();
     assert(z.x() == 0.0f && z.y() == 0.0f && z.z() == 0.0f);
 
-    fc::Vector3 ux = fc::vector3_unit_x();
+    [[maybe_unused]] fc::Vector3 ux = fc::vector3_unit_x();
     assert(ux.x() == 1.0f && ux.y() == 0.0f && ux.z() == 0.0f);
 
-    fc::Vector3 uy = fc::vector3_unit_y();
+    [[maybe_unused]] fc::Vector3 uy = fc::vector3_unit_y();
     assert(uy.x() == 0.0f && uy.y() == 1.0f && uy.z() == 0.0f);
 
-    fc::Vector3 uz = fc::vector3_unit_z();
+    [[maybe_unused]] fc::Vector3 uz = fc::vector3_unit_z();
     assert(uz.x() == 0.0f && uz.y() == 0.0f && uz.z() == 1.0f);
 
     std::printf("PASS: Vector3 free functions\n");
@@ -214,7 +214,7 @@ void test_free_functions() {
 
 void test_data_access() {
     fc::Vector3 v(1.0f, 2.0f, 3.0f);
-    const float* d = v.data();
+    [[maybe_unused]] const float* d = v.data();
     assert(d[0] == 1.0f);
     assert(d[1] == 2.0f);
     assert(d[2] == 3.0f);
