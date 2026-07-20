@@ -1,0 +1,277 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GCC_VERSION: gcc-13
+  GXX_VERSION: g++-13
+  CLANG_VERSION: clang-17
+  CLANGXX_VERSION: clang++-17
+
+# ============================================================================
+# Stage 1: Build
+# ============================================================================
+
+jobs:
+  build:
+    name: Build (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - compiler: gcc
+            cc: gcc-13
+            cxx: g++-13
+          - compiler: clang
+            cc: clang-17
+            cxx: clang++-17
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            sudo apt-get install -y gcc-13 g++-13
+          else
+            sudo apt-get install -y clang-17
+          fi
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_C_COMPILER=${{ matrix.cc }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_WARN_ERROR=ON
+          -DFC_PROFILE=production
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Verify zero warnings
+        run: |
+          cmake --build build --parallel $(nproc) 2>&1 | tee build_output.txt
+          if grep -qi "warning:" build_output.txt; then
+            echo "::error::Compiler warnings detected. Warnings are treated as errors per charter."
+            exit 1
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.compiler }}
+          path: build/
+          retention-days: 1
+
+  # ============================================================================
+  # Stage 2: Tests + Coverage
+  # ============================================================================
+
+  test:
+    name: Test (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [simulation, development]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential gcc-13 g++-13 lcov
+
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_C_COMPILER=gcc-13
+          -DCMAKE_CXX_COMPILER=g++-13
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_WARN_ERROR=ON
+          -DFC_PROFILE=${{ matrix.profile }}
+          -DFC_ENABLE_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Generate coverage
+        if: matrix.profile == 'simulation'
+        run: |
+          lcov --capture --directory build --output-file lcov.info
+          lcov --remove lcov.info '/usr/*' '*/third_party/*' '*/tests/*' --output-file lcov_filtered.info
+          lcov --list lcov_filtered.info
+
+      - name: Enforce coverage thresholds
+        if: matrix.profile == 'simulation'
+        run: |
+          TOTAL_LINE=$(lcov --summary lcov_filtered.info 2>&1 | grep "lines" | grep -oP '[\d.]+(?=%)')
+          TOTAL_FUNC=$(lcov --summary lcov_filtered.info 2>&1 | grep "functions" | grep -oP '[\d.]+(?=%)')
+          TOTAL_BRANCH=$(lcov --summary lcov_filtered.info 2>&1 | grep "branches" | grep -oP '[\d.]+(?=%)')
+
+          echo "Line coverage:      ${TOTAL_LINE}%"
+          echo "Function coverage:  ${TOTAL_FUNC}%"
+          echo "Branch coverage:    ${TOTAL_BRANCH}%"
+
+          FAILED=0
+          if [ $(echo "$TOTAL_LINE < 100" | bc -l) -eq 1 ]; then
+            echo "::error::Line coverage ${TOTAL_LINE}% is below 100% threshold (charter requirement)"
+            FAILED=1
+          fi
+          if [ $(echo "$TOTAL_FUNC < 100" | bc -l) -eq 1 ]; then
+            echo "::error::Function coverage ${TOTAL_FUNC}% is below 100% threshold (charter requirement)"
+            FAILED=1
+          fi
+          if [ $(echo "$TOTAL_BRANCH < 100" | bc -l) -eq 1 ]; then
+            echo "::error::Branch coverage ${TOTAL_BRANCH}% is below 100% threshold (charter requirement)"
+            FAILED=1
+          fi
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+          echo "All coverage thresholds met."
+
+      - name: Upload coverage report
+        if: matrix.profile == 'simulation'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: lcov_filtered.info
+          retention-days: 30
+
+  # ============================================================================
+  # Stage 3: Static Analysis
+  # ============================================================================
+
+  cppcheck:
+    name: Cppcheck
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: |
+          cppcheck \
+            --enable=all \
+            --error-exitcode=1 \
+            --suppress=missingIncludeSystem \
+            --std=c++23 \
+            --check-level=exhaustive \
+            -I include/ \
+            src/
+
+  clang-tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang-tidy-17 gcc-13 g++-13
+
+      - name: Generate compile_commands.json
+        run: |
+          cmake -B build \
+            -DCMAKE_C_COMPILER=gcc-13 \
+            -DCMAKE_CXX_COMPILER=g++-13 \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run clang-tidy
+        run: |
+          find src/ -name '*.cpp' | xargs \
+            clang-tidy-17 \
+              -p build \
+              --warnings-as-errors='*' \
+              --header-filter='include/fc/.*'
+
+  formatting:
+    name: Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format-17
+
+      - name: Check formatting
+        run: |
+          find include/ src/ -name '*.hpp' -o -name '*.cpp' | xargs \
+            clang-format-17 \
+              --dry-run \
+              --Werror
+
+  # ============================================================================
+  # Stage 4: Quality Gate
+  # ============================================================================
+
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [build, test, cppcheck, clang-tidy, formatting]
+    steps:
+      - name: Evaluate gate
+        run: |
+          echo "============================================"
+          echo "  Quality Gate Evaluation"
+          echo "============================================"
+          echo ""
+          echo "Build (GCC):        ${{ needs.build.result }}"
+          echo "Build (Clang):      ${{ needs.build.result }}"
+          echo "Test (simulation):  ${{ needs.test.result }}"
+          echo "Test (development): ${{ needs.test.result }}"
+          echo "Cppcheck:           ${{ needs.cppcheck.result }}"
+          echo "clang-tidy:         ${{ needs.clang-tidy.result }}"
+          echo "Formatting:         ${{ needs.formatting.result }}"
+          echo ""
+
+          FAILED=0
+
+          for RESULT in \
+            "${{ needs.build.result }}" \
+            "${{ needs.test.result }}" \
+            "${{ needs.cppcheck.result }}" \
+            "${{ needs.clang-tidy.result }}" \
+            "${{ needs.formatting.result }}"; do
+            if [ "$RESULT" != "success" ]; then
+              FAILED=1
+            fi
+          done
+
+          if [ "$FAILED" -eq 1 ]; then
+            echo "::error::Quality gate FAILED. One or more required checks did not pass."
+            echo "Per charter: Code cannot be merged unless it compiles with zero warnings,"
+            echo "passes all automated tests, passes static analysis, and meets coverage thresholds."
+            exit 1
+          fi
+
+          echo "Quality gate PASSED. All checks satisfied."
